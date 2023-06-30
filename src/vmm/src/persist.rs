@@ -15,7 +15,7 @@ use log::{error, info, warn};
 use seccompiler::BpfThreadMap;
 use serde::Serialize;
 use snapshot::Snapshot;
-use userfaultfd::{FeatureFlags, Uffd, UffdBuilder};
+use userfaultfd::{FeatureFlags, Uffd, UffdBuilder, RegisterMode};
 use utils::sock_ctrl_msg::ScmSocket;
 use utils::vm_memory::{GuestMemory, GuestMemoryMmap};
 use versionize::{VersionMap, Versionize, VersionizeResult};
@@ -656,7 +656,7 @@ fn guest_memory_from_uffd(
         let host_base_addr = mem_region.as_ptr();
         let size = mem_region.size();
 
-        uffd.register(host_base_addr.cast(), size as _)
+        uffd.register_with_mode(host_base_addr.cast(), size as _, RegisterMode::MISSING | RegisterMode::WRITE_PROTECT)
             .map_err(GuestMemoryFromUffdError::Register)?;
         backend_mappings.push(GuestRegionUffdMapping {
             base_host_virt_addr: host_base_addr as u64,
