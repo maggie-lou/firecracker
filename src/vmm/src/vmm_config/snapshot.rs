@@ -30,6 +30,9 @@ pub enum MemBackendType {
     /// Guest memory contents will be loaded from a file.
     File,
     /// Guest memory will be served through UFFD by a separate process.
+    /// Starting from Linux 5.11, you must give the firecracker process the
+    /// `CAP_SYS_PTRACE` capability or set the `vm.unprivileged_userfaultfd`
+    /// sysctl knob to 1 on the host.
     Uffd,
 }
 
