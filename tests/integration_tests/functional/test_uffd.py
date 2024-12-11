@@ -117,11 +117,50 @@ def test_valid_handler(uvm_plain, snapshot, uffd_handler_paths):
 
     # Inflate balloon.
     vm.api.balloon.patch(amount_mib=200)
-
     # Deflate balloon.
     vm.api.balloon.patch(amount_mib=0)
 
     # Verify if the restored guest works.
+
+def test_balloon_events(uvm_plain, snapshot, uffd_handler_paths):
+    vm = uvm_plain
+    vm.memory_monitor = None
+    vm.spawn()
+
+    # Spawn page fault handler process.
+    _pf_handler = spawn_pf_handler(
+        vm, uffd_handler_paths["valid_handler"], snapshot.mem
+    )
+
+    vm.restore_from_snapshot(snapshot, resume=True, uffd_path=SOCKET_PATH)
+
+    # Dirty some memory in the guest
+    cmd = f"/usr/local/bin/fillmem 200"
+    exit_code, stdout, stderr = vm.ssh.run(cmd, timeout=1.0)
+    # add something to the logs for troubleshooting
+    if exit_code != 0:
+        logger.error("while running: %s", cmd)
+        logger.error("stdout: %s", stdout)
+        logger.error("stderr: %s", stderr)
+
+
+    # Inflate the balloon - this should trigger some REMOVE events in the UFFD
+    # handler
+    try:
+        with Timeout(seconds=30):
+            vm.api.balloon.patch(amount_mib=200)
+            assert False, "Firecracker should freeze"
+    except (TimeoutError, requests.exceptions.ReadTimeout):
+        pass
+
+    # new_snapshot = vm.make_snapshot(SnapshotType.DIFF)
+    # new_snapshot = new_snapshot.rebase_snapshot(
+    #     snapshot, use_snapshot_editor=use_snapshot_editor
+    # )
+    # vm.kill()
+    #
+    # vm.restore_from_snapshot(new_snapshot, resume=True)
+
 
 
 def test_malicious_handler(uvm_plain, snapshot, uffd_handler_paths):

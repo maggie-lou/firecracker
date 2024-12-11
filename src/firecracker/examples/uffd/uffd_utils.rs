@@ -54,6 +54,8 @@ pub struct UffdHandler {
     pub page_size: usize,
     backing_buffer: *const u8,
     uffd: Uffd,
+    pub num_page_faults: u8,
+    pub num_remove_events: u8,
 }
 
 impl UffdHandler {
@@ -86,6 +88,8 @@ impl UffdHandler {
             page_size,
             backing_buffer,
             uffd,
+            num_page_faults: 0,
+            num_remove_events: 0,
         }
     }
 

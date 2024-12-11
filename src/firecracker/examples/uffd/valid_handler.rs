@@ -35,13 +35,18 @@ fn main() {
         // event (if the balloon device is enabled).
         match event {
             userfaultfd::Event::Pagefault { addr, .. } => {
-                uffd_handler.serve_pf(addr.cast(), uffd_handler.page_size)
+                uffd_handler.num_page_faults += 1;
+                uffd_handler.serve_pf(addr.cast(), uffd_handler.page_size);
             }
-            userfaultfd::Event::Remove { start, end } => uffd_handler.update_mem_state_mappings(
-                start as u64,
-                end as u64,
-                MemPageState::Removed,
-            ),
+            userfaultfd::Event::Remove { start, end } => {
+                panic!("Got remove event");
+                uffd_handler.num_remove_events += 1;
+                uffd_handler.update_mem_state_mappings(
+                    start as u64,
+                    end as u64,
+                    MemPageState::Removed,
+                )
+            }
             _ => panic!("Unexpected event on userfaultfd"),
         }
     });
