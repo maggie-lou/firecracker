@@ -81,25 +81,27 @@ pub(crate) fn remove_range(
             .get_host_address(guest_address)
             .map_err(|_| RemoveRegionError::AddressTranslation)?;
 
+	// BALLOON: This unregisters the memory from UFFD, which prevents us from
+	// receiving UFFD remove events so that we can track removed pages.
         // Mmap a new anonymous region over the present one in order to create a hole.
         // This workaround is (only) needed after resuming from a snapshot because the guest memory
         // is mmaped from file as private and there is no `madvise` flag that works for this case.
-        if restored {
-            // SAFETY: The address and length are known to be valid.
-            let ret = unsafe {
-                libc::mmap(
-                    phys_address.cast(),
-                    u64_to_usize(range_len),
-                    libc::PROT_READ | libc::PROT_WRITE,
-                    libc::MAP_FIXED | libc::MAP_ANONYMOUS | libc::MAP_PRIVATE,
-                    -1,
-                    0,
-                )
-            };
-            if ret == libc::MAP_FAILED {
-                return Err(RemoveRegionError::MmapFail(io::Error::last_os_error()));
-            }
-        };
+//        if restored {
+//            // SAFETY: The address and length are known to be valid.
+//            let ret = unsafe {
+//                libc::mmap(
+//                    phys_address.cast(),
+//                    u64_to_usize(range_len),
+//                    libc::PROT_READ | libc::PROT_WRITE,
+//                    libc::MAP_FIXED | libc::MAP_ANONYMOUS | libc::MAP_PRIVATE,
+//                    -1,
+//                    0,
+//                )
+//            };
+//            if ret == libc::MAP_FAILED {
+//                return Err(RemoveRegionError::MmapFail(io::Error::last_os_error()));
+//            }
+//        };
 
         // Madvise the region in order to mark it as not used.
         // SAFETY: The address and length are known to be valid.
