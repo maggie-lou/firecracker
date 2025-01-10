@@ -144,9 +144,19 @@ impl UffdHandler {
         let src = self.backing_buffer as u64 + region.mapping.offset + offset;
 
         let ret = unsafe {
-            self.uffd
-                .copy(src as *const _, dst as *mut _, len, true)
-                .expect("Uffd copy failed")
+            match self.uffd.copy(src as *const _, dst as *mut _, len, true) {
+                Ok(value) => value,
+                Err(Error::PartiallyCopied(bytes_copied)) => {
+                    // Means the copy coincided with an EVENT_REMOVE. Ignore in this case.
+                    // https://github.com/torvalds/linux/commit/df2cc96e77011cf7989208b206da9817e0321028
+                    return;  // Ignore or handle EAGAIN differently (e.g., retry)
+                }
+                Err(e) => {
+                    // Handle other errors
+                    eprintln!("Uffd copy failed with error: {:?}", e);
+                    panic!("Uffd copy failed");
+                }
+            }
         };
 
         // Make sure the UFFD copied some bytes.
