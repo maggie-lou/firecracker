@@ -18,7 +18,7 @@ pub(crate) fn parse_get_balloon(
             "statistics" => Ok(ParsedRequest::new_sync(VmmAction::GetBalloonStats)),
             _ => Err(RequestError::Generic(
                 StatusCode::BadRequest,
-                format!("Unrecognized GET request path `{}`.", stats_path),
+                format!("Test change! Unrecognized GET request path `{}`.", stats_path),
             )),
         },
         None => Ok(ParsedRequest::new_sync(VmmAction::GetBalloonConfig)),
